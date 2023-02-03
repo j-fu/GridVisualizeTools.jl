@@ -195,59 +195,68 @@ function marching_tetrahedra(coord,cellnodes,func,planes,flevels;
 end
 
 
+function marching_triangles(coord::Matrix{Tv},cellnodes::Matrix{Ti},func,levels; Tc=Float32, Tp=SVector{2,Tc}) where{ Tv<:Number, Ti<:Number}
+    marching_triangles([coord], [cellnodes], [func], levels; Tc, Tp)
+end
 """
     $(SIGNATURES)
 
 Collect isoline snippets on triangles ready for linesegments!
 """
-function marching_triangles(coord,cellnodes,func,levels; Tc=Float32, Tp=SVector{2,Tc})
+function marching_triangles(coords::Vector{Matrix{Tv}},cellnodes::Vector{Matrix{Ti}},funcs,levels; Tc=Float32, Tp=SVector{2,Tc}) where{ Tv<:Number, Ti<:Number}
     points=Vector{Tp}(undef,0)
-    function isect(nodes)
-        (i1,i2,i3)=(1,2,3)
 
-        f=(func[nodes[1]],func[nodes[2]],func[nodes[3]])
-
-        f[1]  <= f[2]  ?  (i1,i2) = (1,2)   : (i1,i2) = (2,1)
-        f[i2] <= f[3]  ?  i3=3              : (i2,i3) = (3,i2)
-        f[i1] >  f[i2] ?  (i1,i2) = (i2,i1) : nothing
-
-        (n1,n2,n3)=(nodes[i1],nodes[i2],nodes[i3])
+    for igrid=1:length(coords)
+        func=funcs[igrid]
+        coord=coords[igrid]
         
-        dx31=coord[1,n3]-coord[1,n1]
-        dx21=coord[1,n2]-coord[1,n1]
-        dx32=coord[1,n3]-coord[1,n2]
-        
-        dy31=coord[2,n3]-coord[2,n1]
-        dy21=coord[2,n2]-coord[2,n1]
-        dy32=coord[2,n3]-coord[2,n2]
-
-        df31 = f[i3]!=f[i1] ? 1/(f[i3]-f[i1]) : 0.0
-        df21 = f[i2]!=f[i1] ? 1/(f[i2]-f[i1]) : 0.0
-        df32 = f[i3]!=f[i2] ? 1/(f[i3]-f[i2]) : 0.0
-
-        for level ∈ levels
-            if  (f[i1]<=level) && (level<f[i3]) 
-	        α=(level-f[i1])*df31
-	        x1=coord[1,n1]+α*dx31
-	        y1=coord[2,n1]+α*dy31
-                
-	        if (level<f[i2])
-	            α=(level-f[i1])*df21
-	            x2=coord[1,n1]+α*dx21
-		    y2=coord[2,n1]+α*dy21
-                else
-	            α=(level-f[i2])*df32
-	            x2=coord[1,n2]+α*dx32
-	            y2=coord[2,n2]+α*dy32
+        function isect(nodes)
+            (i1,i2,i3)=(1,2,3)
+            
+            f=(func[nodes[1]],func[nodes[2]],func[nodes[3]])
+            
+            f[1]  <= f[2]  ?  (i1,i2) = (1,2)   : (i1,i2) = (2,1)
+            f[i2] <= f[3]  ?  i3=3              : (i2,i3) = (3,i2)
+            f[i1] >  f[i2] ?  (i1,i2) = (i2,i1) : nothing
+            
+            (n1,n2,n3)=(nodes[i1],nodes[i2],nodes[i3])
+            
+            dx31=coord[1,n3]-coord[1,n1]
+            dx21=coord[1,n2]-coord[1,n1]
+            dx32=coord[1,n3]-coord[1,n2]
+            
+            dy31=coord[2,n3]-coord[2,n1]
+            dy21=coord[2,n2]-coord[2,n1]
+            dy32=coord[2,n3]-coord[2,n2]
+            
+            df31 = f[i3]!=f[i1] ? 1/(f[i3]-f[i1]) : 0.0
+            df21 = f[i2]!=f[i1] ? 1/(f[i2]-f[i1]) : 0.0
+            df32 = f[i3]!=f[i2] ? 1/(f[i3]-f[i2]) : 0.0
+            
+            for level ∈ levels
+                if  (f[i1]<=level) && (level<f[i3]) 
+	            α=(level-f[i1])*df31
+	            x1=coord[1,n1]+α*dx31
+	            y1=coord[2,n1]+α*dy31
+                    
+	            if (level<f[i2])
+	                α=(level-f[i1])*df21
+	                x2=coord[1,n1]+α*dx21
+		        y2=coord[2,n1]+α*dy21
+                    else
+	                α=(level-f[i2])*df32
+	                x2=coord[1,n2]+α*dx32
+	                y2=coord[2,n2]+α*dy32
+                    end
+                    push!(points,SVector{2,Tc}((x1,y1)))
+                    push!(points,SVector{2,Tc}((x2,y2)))
                 end
-                push!(points,SVector{2,Tc}((x1,y1)))
-                push!(points,SVector{2,Tc}((x2,y2)))
             end
         end
-    end
     
-    for itri=1:size(cellnodes,2)
-        @views isect(cellnodes[:,itri])
+        for itri=1:size(cellnodes[igrid],2)
+            @views isect(cellnodes[igrid][:,itri])
+        end
     end
     points
 end    
