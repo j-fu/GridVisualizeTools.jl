@@ -51,6 +51,10 @@ Update levels, limits, colorbartics based on vector given in func.
 - if colorbarticks is `nothing` replace it with levels, otherwise, if it is a number, replace it
   with a linear range of corresponding length
 """
+function makeisolevels(func::Vector{T}, levels, limits, colorbarticks) where {T <: Number}
+    makeisolevels([func], levels, limits, colorbarticks)
+end
+
 function makeisolevels(funcs::Vector{Vector{T}}, levels, limits, colorbarticks) where {T <: Number}
     if limits[1] > limits[2]
         ext = extrema.(funcs)
@@ -69,8 +73,4 @@ function makeisolevels(funcs::Vector{Vector{T}}, levels, limits, colorbarticks) 
 
     #    map(t->round(t,sigdigits=4),levels),limits,map(t->round(t,sigdigits=4),colorbarticks)
     levels, limits, colorbarticks
-end
-
-function makeisolevels(func::Vector{T}, levels, limits, colorbarticks) where {T <: Number}
-    makeisolevels([func], levels, limits, colorbarticks)
 end

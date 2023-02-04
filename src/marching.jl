@@ -83,30 +83,6 @@ end
  mesh!(collect(mcoll),backlight=1f0) 
 """
 
-function marching_tetrahedra(coord::Matrix{Tc},
-                             cellnodes::Matrix{Ti},
-                             func,
-                             planes,
-                             flevels;
-                             tol = 1.0e-12,
-                             primepoints = zeros(0, 0),
-                             primevalues = zeros(0),
-                             Tv = Float32,
-                             Tp = SVector{3, Float32},
-                             Tf = SVector{3, Int32}) where {Tc, Ti}
-    marching_tetrahedra([coord],
-                        [cellnodes],
-                        [func],
-                        planes,
-                        flevels;
-                        tol,
-                        primepoints,
-                        primevalues,
-                        Tv,
-                        Tp,
-                        Tf)
-end
-
 """
 $(SIGNATURES)
 
@@ -141,6 +117,30 @@ These can be readily turned into a mesh with function values on it.
 Caveat: points with similar coordinates are not identified, e.g. an intersection of a plane and an edge will generate as many edge intersection points as there are tetrahedra adjacent to that edge. As a consequence, normal calculations for visualization alway will end up with facet normals, not point normals, and the visual impression of a rendered isosurface will show its piecewise linear genealogy.
 
 """
+function marching_tetrahedra(coord::Matrix{Tc},
+                             cellnodes::Matrix{Ti},
+                             func,
+                             planes,
+                             flevels;
+                             tol = 1.0e-12,
+                             primepoints = zeros(0, 0),
+                             primevalues = zeros(0),
+                             Tv = Float32,
+                             Tp = SVector{3, Float32},
+                             Tf = SVector{3, Int32}) where {Tc, Ti}
+    marching_tetrahedra([coord],
+                        [cellnodes],
+                        [func],
+                        planes,
+                        flevels;
+                        tol,
+                        primepoints,
+                        primevalues,
+                        Tv,
+                        Tp,
+                        Tf)
+end
+
 function marching_tetrahedra(allcoords::Vector{Matrix{Tc}},
                              allcellnodes::Vector{Matrix{Ti}},
                              allfuncs,
@@ -240,6 +240,11 @@ function marching_tetrahedra(allcoords::Vector{Matrix{Tc}},
     all_ixcoord, all_ixfaces, all_ixvalues
 end
 
+"""
+    $(SIGNATURES)
+
+Collect isoline snippets on triangles ready for linesegments!
+"""
 function marching_triangles(coord::Matrix{Tv},
                             cellnodes::Matrix{Ti},
                             func,
@@ -248,11 +253,7 @@ function marching_triangles(coord::Matrix{Tv},
                             Tp = SVector{2, Tc}) where {Tv <: Number, Ti <: Number}
     marching_triangles([coord], [cellnodes], [func], levels; Tc, Tp)
 end
-"""
-    $(SIGNATURES)
 
-Collect isoline snippets on triangles ready for linesegments!
-"""
 function marching_triangles(coords::Vector{Matrix{Tv}},
                             cellnodes::Vector{Matrix{Ti}},
                             funcs,
