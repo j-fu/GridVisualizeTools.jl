@@ -25,21 +25,17 @@
   This method can be used both for the evaluation of plane sections and for
   the evaluation of function isosurfaces.
 """
-function tet_x_plane!(
-    ixcoord,
-    ixvalues,
-    pointlist,
-    node_indices,
-    planeq_values,
-    function_values;
-    tol = 0.0,
-)
+function tet_x_plane!(ixcoord,
+                      ixvalues,
+                      pointlist,
+                      node_indices,
+                      planeq_values,
+                      function_values;
+                      tol = 0.0)
 
     # If all nodes lie on one side of the plane, no intersection
-    @fastmath if (
-        mapreduce(a -> a < -tol, *, planeq_values) ||
-        mapreduce(a -> a > tol, *, planeq_values)
-    )
+    @fastmath if (mapreduce(a -> a < -tol, *, planeq_values) ||
+                  mapreduce(a -> a > tol, *, planeq_values))
         return 0
     end
     # Interpolate coordinates and function_values according to
@@ -47,26 +43,21 @@ function tet_x_plane!(
     nxs = 0
     @inbounds @simd for n1 = 1:3
         N1 = node_indices[n1]
-        @inbounds @fastmath @simd for n2 = n1+1:4
+        @inbounds @fastmath @simd for n2 = (n1 + 1):4
             N2 = node_indices[n2]
             if planeq_values[n1] != planeq_values[n2] &&
                planeq_values[n1] * planeq_values[n2] < tol
                 nxs += 1
                 t = planeq_values[n1] / (planeq_values[n1] - planeq_values[n2])
-                ixcoord[1, nxs] =
-                    pointlist[1, N1] + t * (pointlist[1, N2] - pointlist[1, N1])
-                ixcoord[2, nxs] =
-                    pointlist[2, N1] + t * (pointlist[2, N2] - pointlist[2, N1])
-                ixcoord[3, nxs] =
-                    pointlist[3, N1] + t * (pointlist[3, N2] - pointlist[3, N1])
-                ixvalues[nxs] =
-                    function_values[N1] + t * (function_values[N2] - function_values[N1])
+                ixcoord[1, nxs] = pointlist[1, N1] + t * (pointlist[1, N2] - pointlist[1, N1])
+                ixcoord[2, nxs] = pointlist[2, N1] + t * (pointlist[2, N2] - pointlist[2, N1])
+                ixcoord[3, nxs] = pointlist[3, N1] + t * (pointlist[3, N2] - pointlist[3, N1])
+                ixvalues[nxs] = function_values[N1] + t * (function_values[N2] - function_values[N1])
             end
         end
     end
     return nxs
 end
-
 
 """
  We should be able to parametrize this
@@ -92,34 +83,28 @@ end
  mesh!(collect(mcoll),backlight=1f0) 
 """
 
-function marching_tetrahedra(
-    coord::Matrix{Tc},
-    cellnodes::Matrix{Ti},
-    func,
-    planes,
-    flevels;
-    tol = 1.0e-12,
-    primepoints = zeros(0, 0),
-    primevalues = zeros(0),
-    Tv = Float32,
-    Tp = SVector{3,Float32},
-    Tf = SVector{3,Int32},
-) where {Tc,Ti}
-
-    marching_tetrahedra(
-        [coord],
-        [cellnodes],
-        [func],
-        planes,
-        flevels;
-        tol,
-        primepoints,
-        primevalues,
-        Tv,
-        Tp,
-        Tf,
-    )
-
+function marching_tetrahedra(coord::Matrix{Tc},
+                             cellnodes::Matrix{Ti},
+                             func,
+                             planes,
+                             flevels;
+                             tol = 1.0e-12,
+                             primepoints = zeros(0, 0),
+                             primevalues = zeros(0),
+                             Tv = Float32,
+                             Tp = SVector{3, Float32},
+                             Tf = SVector{3, Int32}) where {Tc, Ti}
+    marching_tetrahedra([coord],
+                        [cellnodes],
+                        [func],
+                        planes,
+                        flevels;
+                        tol,
+                        primepoints,
+                        primevalues,
+                        Tv,
+                        Tp,
+                        Tf)
 end
 
 """
@@ -156,34 +141,29 @@ These can be readily turned into a mesh with function values on it.
 Caveat: points with similar coordinates are not identified, e.g. an intersection of a plane and an edge will generate as many edge intersection points as there are tetrahedra adjacent to that edge. As a consequence, normal calculations for visualization alway will end up with facet normals, not point normals, and the visual impression of a rendered isosurface will show its piecewise linear genealogy.
 
 """
-function marching_tetrahedra(
-    allcoords::Vector{Matrix{Tc}},
-    allcellnodes::Vector{Matrix{Ti}},
-    allfuncs,
-    planes,
-    flevels;
-    tol = 1.0e-12,
-    primepoints = zeros(0, 0),
-    primevalues = zeros(0),
-    Tv = Float32,
-    Tp = SVector{3,Float32},
-    Tf = SVector{3,Int32},
-) where {Tc,Ti}
+function marching_tetrahedra(allcoords::Vector{Matrix{Tc}},
+                             allcellnodes::Vector{Matrix{Ti}},
+                             allfuncs,
+                             planes,
+                             flevels;
+                             tol = 1.0e-12,
+                             primepoints = zeros(0, 0),
+                             primevalues = zeros(0),
+                             Tv = Float32,
+                             Tp = SVector{3, Float32},
+                             Tf = SVector{3, Int32}) where {Tc, Ti}
 
     # We could rewrite this for Meshing.jl
     # CellNodes::Vector{Ttet}, Coord::Vector{Tpt}
     nplanes = length(planes)
     nlevels = length(flevels)
 
-
-
-
     # Create output vectors
     all_ixfaces = Vector{Tf}(undef, 0)
     all_ixcoord = Vector{Tp}(undef, 0)
     all_ixvalues = Vector{Tv}(undef, 0)
 
-    @assert(length(primevalues) == size(primepoints, 2))
+    @assert(length(primevalues)==size(primepoints, 2))
     for iprime = 1:size(primepoints, 2)
         @views push!(all_ixcoord, primepoints[:, iprime])
         @views push!(all_ixvalues, primevalues[iprime])
@@ -196,9 +176,7 @@ function marching_tetrahedra(
     node_indices = zeros(Int32, 4)
 
     # Function to evaluate plane equation
-    @inbounds @fastmath plane_equation(plane, coord) =
-        coord[1] * plane[1] + coord[2] * plane[2] + coord[3] * plane[3] + plane[4]
-
+    @inbounds @fastmath plane_equation(plane, coord) = coord[1] * plane[1] + coord[2] * plane[2] + coord[3] * plane[3] + plane[4]
 
     function pushtris(ns, ixcoord, ixvalues)
         # number of intersection points can be 3 or 4
@@ -214,8 +192,6 @@ function marching_tetrahedra(
             end
         end
     end
-
-
 
     for igrid = 1:length(allcoords)
         coord = allcoords[igrid]
@@ -235,50 +211,41 @@ function marching_tetrahedra(
                 planeq[2] = all_planeq[node_indices[2]]
                 planeq[3] = all_planeq[node_indices[3]]
                 planeq[4] = all_planeq[node_indices[4]]
-                nxs = tet_x_plane!(
-                    ixcoord,
-                    ixvalues,
-                    coord,
-                    node_indices,
-                    planeq,
-                    func,
-                    tol = tol,
-                )
+                nxs = tet_x_plane!(ixcoord,
+                                   ixvalues,
+                                   coord,
+                                   node_indices,
+                                   planeq,
+                                   func;
+                                   tol = tol)
                 pushtris(nxs, ixcoord, ixvalues)
             end
         end
 
         @inbounds for iplane = 1:nplanes
-            @views @inbounds map!(
-                inode -> plane_equation(planes[iplane], coord[:, inode]),
-                all_planeq,
-                1:nnodes,
-            )
+            @views @inbounds map!(inode -> plane_equation(planes[iplane], coord[:, inode]),
+                                  all_planeq,
+                                  1:nnodes)
             calcxs()
         end
 
         # allocation free (besides push!)
         @inbounds for ilevel = 1:nlevels
-            @views @inbounds @fastmath map!(
-                inode -> (func[inode] - flevels[ilevel]),
-                all_planeq,
-                1:nnodes,
-            )
+            @views @inbounds @fastmath map!(inode -> (func[inode] - flevels[ilevel]),
+                                            all_planeq,
+                                            1:nnodes)
             calcxs()
         end
     end
     all_ixcoord, all_ixfaces, all_ixvalues
 end
 
-
-function marching_triangles(
-    coord::Matrix{Tv},
-    cellnodes::Matrix{Ti},
-    func,
-    levels;
-    Tc = Float32,
-    Tp = SVector{2,Tc},
-) where {Tv<:Number,Ti<:Number}
+function marching_triangles(coord::Matrix{Tv},
+                            cellnodes::Matrix{Ti},
+                            func,
+                            levels;
+                            Tc = Float32,
+                            Tp = SVector{2, Tc}) where {Tv <: Number, Ti <: Number}
     marching_triangles([coord], [cellnodes], [func], levels; Tc, Tp)
 end
 """
@@ -286,14 +253,12 @@ end
 
 Collect isoline snippets on triangles ready for linesegments!
 """
-function marching_triangles(
-    coords::Vector{Matrix{Tv}},
-    cellnodes::Vector{Matrix{Ti}},
-    funcs,
-    levels;
-    Tc = Float32,
-    Tp = SVector{2,Tc},
-) where {Tv<:Number,Ti<:Number}
+function marching_triangles(coords::Vector{Matrix{Tv}},
+                            cellnodes::Vector{Matrix{Ti}},
+                            funcs,
+                            levels;
+                            Tc = Float32,
+                            Tp = SVector{2, Tc}) where {Tv <: Number, Ti <: Number}
     points = Vector{Tp}(undef, 0)
 
     for igrid = 1:length(coords)
@@ -338,8 +303,8 @@ function marching_triangles(
                         x2 = coord[1, n2] + α * dx32
                         y2 = coord[2, n2] + α * dy32
                     end
-                    push!(points, SVector{2,Tc}((x1, y1)))
-                    push!(points, SVector{2,Tc}((x2, y2)))
+                    push!(points, SVector{2, Tc}((x1, y1)))
+                    push!(points, SVector{2, Tc}((x2, y2)))
                 end
             end
         end
