@@ -57,7 +57,7 @@ function makeisolevels(funcs::Vector{Vector{T}}, levels,limits, colorbarticks) w
         ext=extrema.(funcs)
         limits=(minimum(first.(ext)),maximum(last.(ext)))
     end
-    
+   
     if isa(levels,Number)
         levels=collect(LinRange(limits[1],limits[2],levels+2))
     end
