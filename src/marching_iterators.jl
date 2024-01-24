@@ -1,4 +1,4 @@
-function pushintersection!(intersection_points,triangle,levels)
+function pushintersection!(intersection_points,triangle::LinearSimplex{2},levels)
     f = values(triangle)
     coord=points(triangle)
     
@@ -41,19 +41,27 @@ function pushintersection!(intersection_points,triangle,levels)
     end
 end
 
+function intersections(triangles::T,levels, Tp) where T<:LinearSimplexIterator{2}
+    local intersection_points = Vector{Tp}(undef, 0)
+    for triangle in triangles
+        pushintersection!(intersection_points,triangle)
+    end
+    intersection_points
+end
 
 function marching_triangles(triangle_iterators::Vector{LinearSimplexIterator{2}},
                             levels;
                             Tc = Float32,
                             Tp = SVector{2, Tc})
-    threads=map(triangle_iterators) do triangles
-        Threads.@spawn begin
-            local intersection_points = Vector{Tp}(undef, 0)
-            for triangle in triangles
-                pushintersection!(intersection_points,triangle)
-            end
-            intersection_points
+
+    if Threads.nthreads()==1
+        map(triangle_iterators) do triangles
+            intersections(triangles,levels,Tp)
         end
+    else
+        threads=map(triangle_iterators) do triangles
+            Threads.@spawn intersections(triangles,levels,Tp)
+        end
+        fetch.(threads)
     end
-    fetch.(threads)
 end
