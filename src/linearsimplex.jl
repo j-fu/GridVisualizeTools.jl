@@ -31,6 +31,25 @@ function LinearSimplex(::Type{Val{3}},points::AbstractMatrix, values::AbstractVe
     LinearSimplex(spoints,svalues)
 end
 
+
+function LinearSimplex(::Type{Val{1}},points::AbstractMatrix, values::AbstractVector,coordscale)
+    @views spoints=SVector{2,Point{1,Float32}}(points[:,1]*coordscale,points[:,2]*coordscale)
+    svalues=SVector{2,Float32}(values[1],values[2])
+    LinearSimplex(spoints,svalues)
+end
+
+function LinearSimplex(::Type{Val{2}},points::AbstractMatrix, values::AbstractVector,coordscale)
+    @views spoints=SVector{3,Point{2,Float32}}(points[:,1]*coordscale,points[:,2]*coordscale,points[:,3]*coordscale)
+    svalues=SVector{3,Float32}(values[1],values[2],values[3])
+    LinearSimplex(spoints,svalues)
+end
+
+function LinearSimplex(::Type{Val{3}},points::AbstractMatrix, values::AbstractVector,coordscale)
+    @views spoints=SVector{4,Point{3,Float32}}(points[:,1]*coordscale,points[:,2]*coordscale,points[:,3]*coordscale,points[:,4]*coordscale)
+    svalues=SVector{4,Float32}(values[1],values[2],values[3],values[4])
+    LinearSimplex(spoints,svalues)
+end
+
 LinearEdge(points,values)=LinearSimplex(Val{1},points,values)
 LinearTriangle(points,values)=LinearSimplex(Val{2},points,values)
 LinearTetrahedron(points,values)=LinearSimplex(Val{3},points,values)
@@ -58,7 +77,8 @@ Sum up all values passed via the iterator. Designed for testing iterators.
 Useful for:
 - Consistency test - e.g. when passing constant ones, the sum can be calculated by 
   other means and compared to the return value of testloop
-- Allocation test. `testloop` itself does not allocate, so any allocations from a
+- Allocation test. `testloop` itself does allocate only a few (<1000) bytes in
+  very few (<10) allocations. So any allocations beyond this from a
   call to `testloop` hint at possibilities to improve an iterator implementation.
 """
 function testloop(iterators::AbstractVector{T}) where T<:LinearSimplexIterator
